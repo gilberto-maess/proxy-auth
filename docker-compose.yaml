@@ -1,0 +1,57 @@
+version: "3.4"
+
+services:
+
+  db:
+    container_name: db
+    image: mariadb
+    restart: always
+    command: --lower_case_table_names=1
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_HOST: "%"
+      MARIADB_DATABASE: keycloak
+    ports:
+      - "3306:3306"
+    volumes:
+      - db:/var/lib/mysql/data
+
+  portal1:
+    container_name: portal1
+    build: portal1/.
+    restart: always
+
+  portal2:
+    container_name: portal2
+    build: portal2/.
+    restart: always
+
+  sso:
+    container_name: sso
+    image: quay.io/keycloak/keycloak:22.0.4
+    command: start-dev
+    restart: always
+    environment:
+      DB_VENDOR: mariadb
+      DB_ADDR: db
+      DB_DATABASE: keycloak
+      DB_USER: ${KC_DB_USERNAME}
+      DB_PASSWORD: ${KC_DB_PASSWORD}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    ports:
+      - 8080:8080
+
+  proxy:
+    container_name: proxy
+    build: proxy/.
+    restart: always
+    environment:
+      SSO_AUTHORITY: http://sso:8080/realms/admin
+      SSO_CLIENT_ID: admin
+      SSO_CLIENT_SECRET: ${SSO_CLIENT_SECRET}
+    ports:
+      - 80:80
+
+volumes:
+  db:
