@@ -13,6 +13,10 @@ builder.Services
         cfg.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
         cfg.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
     })
+    .AddCookie(options =>
+    {
+        options.CookieManager = new ChunkingCookieManager();
+    })
     .AddOpenIdConnect(cfg =>
     {
         cfg.Authority = builder.Configuration["SSO_AUTHORITY"];
@@ -31,6 +35,11 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.CheckConsentNeeded = context => false;
     options.MinimumSameSitePolicy = SameSiteMode.None;
 });
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+});
 
 builder.Services.AddAuthorization(options =>
 {
@@ -48,6 +57,7 @@ options.KnownNetworks.Clear();
 options.KnownProxies.Clear();
 app.UseForwardedHeaders(options);
 app.UseRouting();
+app.UseCookiePolicy();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseEndpoints(endpoints =>
